@@ -27,6 +27,7 @@
 /*************************************************************************************************************/
 
 -- the expr CTE contains the text to be scanned
+-- the text here is just provided as a sample input
 WITH RECURSIVE expr(code) AS (values ('"Abc" +  10 + 20 * 3.45 / 9 - 334 + func(arg1, arg2, "alpha?");')),
 -- the lex CTE contains the actual state machine logic
 -- ctrl is the JSON object used to hold the machine state and other attributes
@@ -40,12 +41,12 @@ lex(ctrl) AS (
 		-- the input string must be terminated with a semi-colon
 		-- this step checks for string overrun
 		WHEN ctrl ->> '$.i' > length(expr.code) then json_object('st', 'S_ERROR', 'tk', '', 'tx', format('Unexpected end of input at position %d', ctrl ->> '$.i'))
-		-- S_START state is the base state that all other states will return to once scanning is complete and a token is emitted
+		-- S_START state is the base state that all other states will return to once sub-token scanning is complete and a token is emitted
 		WHEN ctrl ->> '$.st' = 'S_START' THEN
 		CASE 
 			-- check for the semi-colon that indicates EOL
 			WHEN ctrl ->> '$.ch' = ';' THEN json_object('st', 'S_EOL', 'tk', 'T_EOL', 'ch', substr(expr.code, ctrl ->> '$.i'+1, 1), 'i', ctrl ->> '$.i'+1, 'tx', '<EOL>')
-			-- whitespace: moves the nexct state to S_WS
+			-- whitespace: moves the next state to S_WS
 			WHEN ctrl ->> '$.ch' = ' ' THEN json_object('st', 'S_WS', 'tk', 'T_WAIT', 'ch', substr(expr.code, ctrl ->> '$.i'+1, 1), 'i', ctrl ->> '$.i'+1, 'tx', '')
 			-- numeric digit: moves the next state to S_INT
 			WHEN instr('0123456789', ctrl ->> '$.ch') > 0 THEN json_object('st', 'S_INT', 'tk', 'T_WAIT', 'ch', substr(expr.code, ctrl ->> '$.i'+1, 1), 'i', ctrl ->> '$.i'+1, 'tx', ctrl ->> '$.ch')
