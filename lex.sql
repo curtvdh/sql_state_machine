@@ -17,7 +17,7 @@
 /* T_EOL:    \;                                                                                              */
 /*                                                                                                           */
 /* The state machine uses a recursive CTE and a JSON object to split the input string into tokens.           */
-/* The JSON objects {called ctrl in the script) has these attributes:                                        */
+/* The JSON objects (called 'ctrl' in the script) has these attributes:                                      */
 /*   st: the current state of the machine                                                                    */
 /*   tk: the emitted token (the pseudo token T_WAIT indicates that the machine is processing a token)        */
 /*   ch: the current character of the input string                                                           */
