@@ -68,7 +68,7 @@ lex(ctrl) AS (
 			-- if no character is matched, emit an error state
 			ELSE json_object('st', 'S_ERROR', 'tk', '', 'tx', format('Error at position %d near character "%s"', ctrl ->> '$.i', ctrl ->> '$.ch'))
 		END
-		-- S_WS: keeps scanning for multiple whitespace
+		-- S_WS: repeats until char is anything other than a space
 		WHEN ctrl ->> '$.st' = 'S_WS' THEN
 		CASE
 			WHEN ctrl ->> '$.ch' = ' ' THEN json_object('st', 'S_WS', 'tk', 'T_WAIT', 'ch', substr(expr.code, ctrl ->> '$.i'+1, 1), 'i', ctrl ->> '$.i'+1, 'tx', '')
@@ -79,26 +79,32 @@ lex(ctrl) AS (
 		-- return to S_STATE if char is anything else
 		WHEN ctrl ->> '$.st' = 'S_INT' THEN 
 		CASE 
-			WHEN instr('0123456789', ctrl ->> '$.ch') > 0 THEN json_object('st', 'S_INT', 'tk', 'T_WAIT', 'ch', substr(expr.code, ctrl ->> '$.i'+1, 1), 'i', ctrl ->> '$.i'+1, 'tx', format('%s%s', ctrl ->> '$.tx', ctrl ->> '$.ch'))
-			WHEN ctrl ->> '$.ch' = '.' THEN json_object('st', 'S_FLOAT', 'tk', 'T_WAIT', 'ch', substr(expr.code, ctrl ->> '$.i'+1, 1), 'i', ctrl ->> '$.i'+1, 'tx', format('%s%s', ctrl ->> '$.tx', ctrl ->> '$.ch'))
+			WHEN instr('0123456789', ctrl ->> '$.ch') > 0 THEN json_object('st', 'S_INT', 'tk', 'T_WAIT', 'ch', substr(expr.code, ctrl ->> '$.i'+1, 1), 
+	                                                                               'i', ctrl ->> '$.i'+1, 'tx', format('%s%s', ctrl ->> '$.tx', ctrl ->> '$.ch'))
+			WHEN ctrl ->> '$.ch' = '.' THEN json_object('st', 'S_FLOAT', 'tk', 'T_WAIT', 'ch', substr(expr.code, ctrl ->> '$.i'+1, 1), 
+	                                                            'i', ctrl ->> '$.i'+1, 'tx', format('%s%s', ctrl ->> '$.tx', ctrl ->> '$.ch'))
 			ELSE json_object('st', 'S_START', 'tk', 'T_INT', 'ch', substr(expr.code, ctrl ->> '$.i', 1), 'i', ctrl ->> '$.i', 'tx', ctrl ->> '$.tx')
 		END
 		-- S_FLOAT: gather digits into ctrl -> tx, return to S_START if char is not a digit
 		WHEN ctrl ->> '$.st' = 'S_FLOAT' THEN 
 		CASE
-			WHEN instr('0123456789', ctrl ->> '$.ch') > 0 THEN json_object('st', 'S_FLOAT', 'tk', 'T_WAIT', 'ch', substr(expr.code, ctrl ->> '$.i'+1, 1), 'i', ctrl ->> '$.i'+1, 'tx', format('%s%s', ctrl ->> '$.tx', ctrl ->> '$.ch'))
+			WHEN instr('0123456789', ctrl ->> '$.ch') > 0 THEN json_object('st', 'S_FLOAT', 'tk', 'T_WAIT', 'ch', substr(expr.code, ctrl ->> '$.i'+1, 1), 
+	                                                                               'i', ctrl ->> '$.i'+1, 'tx', format('%s%s', ctrl ->> '$.tx', ctrl ->> '$.ch'))
 			ELSE json_object('st', 'S_START', 'tk', 'T_FLOAT', 'ch', substr(expr.code, ctrl ->> '$.i', 1), 'i', ctrl ->> '$.i', 'tx', ctrl ->> '$.tx')
 		END
 		-- S_KWD: if char is an alphanumeric, gather into ctrl -> tx, otherwise return S_START
 		WHEN ctrl ->> '$.st' = 'S_KWD' THEN
 		CASE
-			WHEN (upper(ctrl ->> '$.ch') between 'A' and 'Z' OR ctrl ->> '$.ch' BETWEEN '0' and '9') THEN json_object('st', 'S_KWD', 'tk', 'T_WAIT', 'ch', substr(expr.code, ctrl ->> '$.i'+1, 1), 'i', ctrl ->> '$.i'+1, 'tx', format('%s%s', ctrl ->> '$.tx', ctrl ->> '$.ch'))
+			WHEN (upper(ctrl ->> '$.ch') between 'A' and 'Z' OR ctrl ->> '$.ch' BETWEEN '0' and '9') 
+				THEN json_object('st', 'S_KWD', 'tk', 'T_WAIT', 'ch', substr(expr.code, ctrl ->> '$.i'+1, 1), 
+	                             'i', ctrl ->> '$.i'+1, 'tx', format('%s%s', ctrl ->> '$.tx', ctrl ->> '$.ch'))
 			ELSE json_object('st', 'S_START', 'tk', 'T_KWD', 'ch', substr(expr.code, ctrl ->> '$.i', 1), 'i', ctrl ->> '$.i', 'tx', ctrl ->> '$.tx')
 		END
 		-- S_STRING: gather all characters into ctrl -> tx until the closing quotation mark is matched 
 		WHEN ctrl ->> '$.st' = 'S_STRING' THEN
 		CASE
-			WHEN ctrl ->> '$.ch' <> '"' THEN json_object('st', 'S_STRING', 'tk', 'T_WAIT', 'ch', substr(expr.code, ctrl ->> '$.i'+1, 1), 'i', ctrl ->> '$.i'+1, 'tx', format('%s%s', ctrl ->> '$.tx', ctrl ->> '$.ch'))
+			WHEN ctrl ->> '$.ch' <> '"' THEN json_object('st', 'S_STRING', 'tk', 'T_WAIT', 'ch', substr(expr.code, ctrl ->> '$.i'+1, 1), 
+	                                                             'i', ctrl ->> '$.i'+1, 'tx', format('%s%s', ctrl ->> '$.tx', ctrl ->> '$.ch'))
 			ELSE json_object('st', 'S_START', 'tk', 'T_STRING', 'ch', substr(expr.code, ctrl ->> '$.i'+1, 1), 'i', ctrl ->> '$.i' + 1, 'tx', ctrl ->> '$.tx')
 		END			
 	END AS state
