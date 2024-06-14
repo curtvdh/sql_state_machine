@@ -36,7 +36,7 @@ lex(ctrl) AS (
 	SELECT json_object('st', 'S_START', 'tk', 'T_WAIT', 'ch', substr(expr.code, 1, 1), 'i', 1, 'tx', '') as ctrl FROM expr
 	UNION ALL SELECT 
 	-- the following is the actual state machine
-	-- it uses a search case to match the current state, check the current character and then determines the next state
+	-- it uses a search case to examine the JSON object 'ctrl' and derive a new JSON object which effects the state transition
 	CASE
 		-- the input string must be terminated with a semi-colon
 		-- this step checks for string overrun
@@ -107,7 +107,7 @@ lex(ctrl) AS (
 	                                                             'i', ctrl ->> '$.i'+1, 'tx', format('%s%s', ctrl ->> '$.tx', ctrl ->> '$.ch'))
 			ELSE json_object('st', 'S_START', 'tk', 'T_STRING', 'ch', substr(expr.code, ctrl ->> '$.i'+1, 1), 'i', ctrl ->> '$.i' + 1, 'tx', ctrl ->> '$.tx')
 		END			
-	END AS state
+	END AS ctrl
 	FROM lex JOIN expr WHERE ctrl ->> '$.st' not in ('S_ERROR', 'S_EOL') 
 )
 SELECT ctrl ->> '$.tk' as token, ctrl ->> '$.tx' as txt FROM lex where ctrl ->> '$.tk' <> 'T_WAIT'
