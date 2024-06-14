@@ -49,9 +49,11 @@ lex(ctrl) AS (
 			-- whitespace: moves the next state to S_WS
 			WHEN ctrl ->> '$.ch' = ' ' THEN json_object('st', 'S_WS', 'tk', 'T_WAIT', 'ch', substr(expr.code, ctrl ->> '$.i'+1, 1), 'i', ctrl ->> '$.i'+1, 'tx', '')
 			-- numeric digit: moves the next state to S_INT
-			WHEN instr('0123456789', ctrl ->> '$.ch') > 0 THEN json_object('st', 'S_INT', 'tk', 'T_WAIT', 'ch', substr(expr.code, ctrl ->> '$.i'+1, 1), 'i', ctrl ->> '$.i'+1, 'tx', ctrl ->> '$.ch')
+			WHEN instr('0123456789', ctrl ->> '$.ch') > 0 THEN json_object('st', 'S_INT', 'tk', 'T_WAIT', 'ch', substr(expr.code, ctrl ->> '$.i'+1, 1), 
+	                                                                               'i', ctrl ->> '$.i'+1, 'tx', ctrl ->> '$.ch')
 			-- alpha character: moves the next state to S_KWD
-			WHEN upper(ctrl ->> '$.ch') BETWEEN 'A' and 'Z' THEN json_object('st', 'S_KWD', 'tk', 'T_WAIT', 'ch', substr(expr.code, ctrl ->> '$.i'+1, 1), 'i', ctrl ->> '$.i'+1, 'tx', ctrl ->> '$.ch')
+			WHEN upper(ctrl ->> '$.ch') BETWEEN 'A' and 'Z' THEN json_object('st', 'S_KWD', 'tk', 'T_WAIT', 'ch', substr(expr.code, ctrl ->> '$.i'+1, 1), 
+	                                                                                 'i', ctrl ->> '$.i'+1, 'tx', ctrl ->> '$.ch')
 			-- quotation mark: moves the next state to S_STRING
 			WHEN ctrl ->> '$.ch' = '"' THEN json_object('st', 'S_STRING', 'tk', 'T_WAIT', 'ch', substr(expr.code, ctrl ->> '$.i'+1, 1), 'i', ctrl ->> '$.i'+1, 'tx', '')
 			-- the following are all single-length characters
