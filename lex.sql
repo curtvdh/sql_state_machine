@@ -76,7 +76,7 @@ lex(ctrl) AS (
 		END
 		-- S_INT: if the current char is a period, switch to state S_FLOAT
 		-- otherwise, gather the digits into ctrl -> tx
-		-- return to S_STATE if char is anything else
+		-- return to S_START if char is anything else
 		WHEN ctrl ->> '$.st' = 'S_INT' THEN 
 		CASE 
 			WHEN instr('0123456789', ctrl ->> '$.ch') > 0 THEN json_object('st', 'S_INT', 'tk', 'T_WAIT', 'ch', substr(expr.code, ctrl ->> '$.i'+1, 1), 
